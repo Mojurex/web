@@ -73,6 +73,12 @@ create table if not exists answers (
   primary key (attempt_id, question_id)
 );
 
+-- Focus mode: таб/цонх солих зөрчил. focus_limit = 0 бол зөвхөн бүртгэнэ.
+alter table exams add column if not exists focus_limit int not null default 3;
+alter table attempts add column if not exists focus_count int not null default 0;
+alter table attempts add column if not exists focus_log jsonb not null default '[]';
+alter table attempts add column if not exists ended_by_focus boolean not null default false;
+
 alter table teachers enable row level security;
 alter table exams enable row level security;
 alter table questions enable row level security;

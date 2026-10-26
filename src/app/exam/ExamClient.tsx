@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { submitSectionAction } from "./actions";
 import { useAutosave, type SaveStatus } from "./useAutosave";
+import { useFocusGuard } from "./useFocusGuard";
 
 const CodeEditor = dynamic(() => import("@/components/CodeEditor").then((m) => m.CodeEditor), { ssr: false });
 const FlowchartEditor = dynamic(() => import("@/components/FlowchartEditor").then((m) => m.FlowchartEditor), {
@@ -24,6 +25,8 @@ type Props = {
   sectionMinutes: number;
   questions: PublicQuestion[];
   initialAnswers: Record<string, AnswerResponse>;
+  focusLimit: number;
+  focusCount: number;
 };
 
 function isAnswered(q: PublicQuestion, r: AnswerResponse | undefined): boolean {
@@ -36,8 +39,21 @@ function isAnswered(q: PublicQuestion, r: AnswerResponse | undefined): boolean {
   return !!changed || !!r.flowchart?.length || !!r.notes?.trim();
 }
 
-function Timer({ deadline, offset, total, onExpire }: { deadline: number; offset: number; total: number; onExpire: () => void }) {
-  const [now, setNow] = useState(() => Date.now() + offset);
+function Timer({
+  deadline,
+  serverNow,
+  offset,
+  total,
+  onExpire,
+}: {
+  deadline: number;
+  serverNow: number;
+  offset: number;
+  total: number;
+  onExpire: () => void;
+}) {
+  // Эхний render серверийн цагаар (hydration таарна), дараа нь хөтчийн цагаар шинэчилнэ.
+  const [now, setNow] = useState(serverNow);
   const fired = useRef(false);
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now() + offset), 500);
@@ -168,6 +184,9 @@ export function ExamClient(props: Props) {
     router.refresh();
   }, [flush, router, section]);
 
+  const focus = useFocusGuard({ enabled: !submitting, beforeLeave: flush, onEnded });
+  const focusCount = focus.warning?.count ?? props.focusCount;
+
   // Б хэсэгт workspace хуваалцдаг даалгавруудыг нэг таб болгоно.
   const groups = useMemo(() => {
     const owners = new Map<string, PublicQuestion[]>();
@@ -193,8 +212,20 @@ export function ExamClient(props: Props) {
               {props.studentName} · {section === "A" ? "А хэсэг · Онол" : "Б хэсэг · Практик"}
             </p>
           </div>
+          {focusCount > 0 && (
+            <span className="rounded-full bg-warn-tint px-2.5 py-0.5 text-sm font-semibold text-warn">
+              Цонхноос гарсан: {focusCount}
+              {props.focusLimit > 0 && `/${props.focusLimit}`}
+            </span>
+          )}
           <SaveBadge status={status} error={error} />
-          <Timer deadline={props.deadline} offset={offset} total={props.sectionMinutes} onExpire={submit} />
+          <Timer
+            deadline={props.deadline}
+            serverNow={props.serverNow}
+            offset={offset}
+            total={props.sectionMinutes}
+            onExpire={submit}
+          />
         </div>
       </header>
 
@@ -243,6 +274,12 @@ export function ExamClient(props: Props) {
           >
             {section === "A" ? "А хэсгийг илгээх" : "Шалгалтыг дуусгах"}
           </button>
+          {section === "A" && (
+            <p className="mt-4 text-sm text-muted">
+              Шалгалтын үеэр өөр таб, цонх руу шилжвэл багшид бүртгэгдэнэ.
+              {props.focusLimit > 0 && ` ${props.focusLimit} удаа гарвал шалгалт автоматаар дуусна.`}
+            </p>
+          )}
         </nav>
 
         <main>
@@ -272,6 +309,28 @@ export function ExamClient(props: Props) {
           </div>
         </main>
       </div>
+
+      {focus.warning && (
+        <div className="fixed inset-0 z-40 grid place-items-center bg-ink/60 p-4" role="alertdialog" aria-modal aria-labelledby="focus-title">
+          <div className="w-full max-w-md rounded-2xl border-t-4 border-warn bg-surface p-6">
+            <h2 id="focus-title" className="text-xl font-bold">
+              Та шалгалтын цонхноос гарлаа
+            </h2>
+            <p className="mt-3">
+              Энэ нь {focus.warning.count} дахь удаа бөгөөд багшид бүртгэгдлээ.
+              {focus.warning.limit > 0 &&
+                (focus.warning.limit - focus.warning.count === 1
+                  ? " Дахин гарвал шалгалт тань автоматаар дуусна."
+                  : ` Нийт ${focus.warning.limit} удаа гарвал шалгалт автоматаар дуусна.`)}
+            </p>
+            <div className="mt-6 flex justify-end">
+              <button type="button" className="btn btn-primary" onClick={focus.dismiss} autoFocus>
+                Ойлголоо, үргэлжлүүлэх
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {confirming && (
         <div className="fixed inset-0 z-30 grid place-items-center bg-ink/40 p-4" role="dialog" aria-modal aria-labelledby="confirm-title">

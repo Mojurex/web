@@ -3,11 +3,11 @@
 import { Markdown } from "@/components/Markdown";
 import { FlowDiagram } from "@/components/Flow";
 import { matches } from "@/lib/grading";
-import type { AnswerResponse, TaskPayload, TaskRubricItem } from "@/lib/types";
+import type { AnswerResponse, FocusEvent, TaskPayload, TaskRubricItem } from "@/lib/types";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { deleteAttempt, saveGrade, saveNote } from "../../../actions";
+import { deleteAttempt, resetFocus, saveGrade, saveNote } from "../../../actions";
 
 const CodeEditor = dynamic(() => import("@/components/CodeEditor").then((m) => m.CodeEditor), { ssr: false });
 const Workspace = dynamic(() => import("@/components/Workspace").then((m) => m.Workspace), { ssr: false });
@@ -367,5 +367,65 @@ export function AttemptHeaderActions({
         Оролдлогыг устгах
       </button>
     </div>
+  );
+}
+
+function formatAway(ms?: number) {
+  if (ms === undefined) return "буцаж ирээгүй";
+  const s = Math.round(ms / 1000);
+  return s < 60 ? `${s} сек` : `${Math.floor(s / 60)} мин ${s % 60} сек`;
+}
+
+export function FocusLog({
+  attemptId,
+  log,
+  count,
+  limit,
+  ended,
+  canReset,
+}: {
+  attemptId: string;
+  log: FocusEvent[];
+  count: number;
+  limit: number;
+  ended: boolean;
+  canReset: boolean;
+}) {
+  const [pending, start] = useTransition();
+  return (
+    <section className={`rounded-xl border p-4 ${ended ? "border-bad bg-bad-tint" : "border-warn bg-warn-tint"}`}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className={`font-bold ${ended ? "text-bad" : "text-warn"}`}>
+          {ended
+            ? `Шалгалтын цонхноос ${count} удаа гарсан тул автоматаар дуусгасан`
+            : `Шалгалтын цонхноос гарсан: ${count}${limit > 0 ? `/${limit}` : ""}`}
+        </h2>
+        {canReset && (
+          <button
+            type="button"
+            className="btn btn-ghost py-1 text-sm"
+            disabled={pending}
+            onClick={() =>
+              confirm("Тоолуурыг тэглэх үү? Санамсаргүй гарсан үед ашиглана. Бүртгэл хадгалагдана.") &&
+              start(() => resetFocus(attemptId))
+            }
+          >
+            Тоолуурыг тэглэх
+          </button>
+        )}
+      </div>
+      <ol className="mt-2 flex flex-col gap-1 text-sm">
+        {log.map((e, i) => (
+          <li key={i} className="flex gap-3">
+            <span className="w-6 text-right text-muted">{i + 1}.</span>
+            <span className="font-mono tabular-nums">
+              {new Date(e.at).toLocaleTimeString("mn-MN", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false })}
+            </span>
+            <span>{e.section === "A" ? "А хэсэг" : "Б хэсэг"}</span>
+            <span className="text-muted">· {formatAway(e.awayMs)}</span>
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }

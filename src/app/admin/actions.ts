@@ -4,7 +4,7 @@ import type { ResponseInput } from "@/content/types";
 import { newAccessCode } from "@/lib/content-to-db";
 import { padScores, requireTeacher } from "@/lib/admin";
 import { sql } from "@/lib/db";
-import { submitSection } from "@/lib/exam";
+import { endAttempt } from "@/lib/exam";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { validItemScore } from "@/lib/scoring";
 import { clearTeacherSession, setTeacherSession } from "@/lib/session";
@@ -50,12 +50,16 @@ export async function updateExamSettings(examId: string, _prev: FormState, form:
   await requireTeacher();
   const a = Number(form.get("section_a_minutes"));
   const b = Number(form.get("section_b_minutes"));
+  const focus = Number(form.get("focus_limit"));
   const title = String(form.get("title") ?? "").trim();
   if (!title) return { error: "Гарчиг хоосон байж болохгүй." };
   if (![a, b].every((m) => Number.isInteger(m) && m >= 1 && m <= 300)) {
     return { error: "Хугацаа 1–300 минутын бүхэл тоо байна." };
   }
-  await sql`update exams set title = ${title}, section_a_minutes = ${a}, section_b_minutes = ${b} where id = ${examId}`;
+  if (!Number.isInteger(focus) || focus < 0 || focus > 20) return { error: "Цонх солих хязгаар 0–20 байна." };
+  await sql`
+    update exams set title = ${title}, section_a_minutes = ${a}, section_b_minutes = ${b}, focus_limit = ${focus}
+    where id = ${examId}`;
   revalidatePath("/admin", "layout");
   return { ok: "Хадгалагдлаа." };
 }
@@ -82,10 +86,18 @@ export async function extendTime(attemptId: string, minutes: number) {
 
 export async function forceSubmit(attemptId: string) {
   await requireTeacher();
-  let [attempt] = await sql<Attempt[]>`select * from attempts where id = ${attemptId}`;
+  const [attempt] = await sql<Attempt[]>`select * from attempts where id = ${attemptId}`;
   if (!attempt) return;
-  if (attempt.section === "A") attempt = await submitSection(attempt, "A");
-  if (attempt.section === "B") await submitSection(attempt, "B");
+  await endAttempt(attempt);
+  revalidatePath("/admin", "layout");
+}
+
+/** Санамсаргүй гарсан тохиолдолд цонх солих тоолуурыг тэглэнэ (бүртгэл хадгалагдана). */
+export async function resetFocus(attemptId: string) {
+  await requireTeacher();
+  await sql`
+    update attempts set focus_count = 0, note = trim(note || ' Цонх солих тоолуурыг багш тэглэв.')
+    where id = ${attemptId}`;
   revalidatePath("/admin", "layout");
 }
 

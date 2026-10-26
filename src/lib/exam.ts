@@ -159,3 +159,50 @@ export async function submitCurrentSection(section: Section): Promise<Attempt | 
   if (!attempt) return null;
   return submitSection(attempt, section);
 }
+
+export type FocusResult = { count: number; limit: number; ended: boolean };
+
+/** Хадгалсан хариултуудыг илгээж оролдлогыг бүхэлд нь дуусгана (А → Б → дууссан). */
+export async function endAttempt(attempt: Attempt): Promise<Attempt> {
+  let current = attempt;
+  if (current.section === "A") current = await submitSection(current, "A");
+  if (current.section === "B") current = await submitSection(current, "B");
+  return current;
+}
+
+/**
+ * Сурагч шалгалтын цонхноос гарсныг бүртгэнэ. Тоолуур сервер дээр байдаг тул
+ * хуудсыг дахин ачаалж тэглэх боломжгүй. Хязгаарт хүрвэл шалгалтыг дуусгана.
+ */
+export async function recordFocusLeave(): Promise<FocusResult | null> {
+  const attempt = await attemptFromCookie();
+  if (!attempt || attempt.section === "done") return null;
+  const event = { at: new Date().toISOString(), section: attempt.section };
+  const [row] = await sql<{ focus_count: number; focus_limit: number }[]>`
+    update attempts a set
+      focus_count = a.focus_count + 1,
+      focus_log = a.focus_log || ${sql.json([event])}
+    from exams e
+    where a.id = ${attempt.id} and e.id = a.exam_id
+    returning a.focus_count, e.focus_limit`;
+  const ended = row.focus_limit > 0 && row.focus_count >= row.focus_limit;
+  if (ended) {
+    const done = await endAttempt(attempt);
+    await sql`
+      update attempts set ended_by_focus = true,
+        note = trim(note || ' Шалгалтын цонхноос ' || ${row.focus_count}::text || ' удаа гарсан тул автоматаар дуусгав.')
+      where id = ${done.id}`;
+  }
+  return { count: row.focus_count, limit: row.focus_limit, ended };
+}
+
+/** Буцаж ирэхэд сүүлийн тохиолдлын хугацааг бичнэ. */
+export async function recordFocusReturn(awayMs: number): Promise<void> {
+  const attempt = await attemptFromCookie();
+  if (!attempt || attempt.focus_log.length === 0) return;
+  const ms = Math.max(0, Math.min(Math.round(awayMs), 24 * 3600_000));
+  await sql`
+    update attempts set focus_log = jsonb_set(
+      focus_log, array[(jsonb_array_length(focus_log) - 1)::text, 'awayMs'], to_jsonb(${ms}::int))
+    where id = ${attempt.id} and jsonb_array_length(focus_log) > 0`;
+}

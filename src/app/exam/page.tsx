@@ -19,6 +19,12 @@ export default async function ExamPage() {
         <p className="text-lg">
           {attempt.student_name}, таны хариултууд хадгалагдлаа. Дүнг багш шалгасны дараа мэдэгдэнэ.
         </p>
+        {attempt.ended_by_focus && (
+          <p className="rounded-lg bg-bad-tint px-3 py-2 text-bad">
+            Шалгалтын цонхноос {attempt.focus_count} удаа гарсан тул шалгалт автоматаар дууссан. Энэ тухай багшид
+            мэдэгдсэн.
+          </p>
+        )}
         <p className="text-muted">{exam.title}</p>
       </main>
     );
@@ -41,6 +47,8 @@ export default async function ExamPage() {
       sectionMinutes={attempt.section === "A" ? exam.section_a_minutes : exam.section_b_minutes}
       questions={questions}
       initialAnswers={answers}
+      focusLimit={exam.focus_limit}
+      focusCount={attempt.focus_count}
     />
   );
 }

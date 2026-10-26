@@ -6,7 +6,7 @@ import type { Attempt } from "@/lib/types";
 import { isOnlineTask, workspaceOwner } from "@/lib/types";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AttemptHeaderActions, GradeCard, McqTable } from "./Grading";
+import { AttemptHeaderActions, FocusLog, GradeCard, McqTable } from "./Grading";
 
 function fmt(n: number) {
   return Number.isInteger(n) ? String(n) : n.toFixed(1);
@@ -67,6 +67,17 @@ export default async function AttemptPage({ params }: { params: Promise<{ id: st
         </p>
         <AttemptHeaderActions attemptId={attempt.id} examId={exam.id} note={attempt.note} nextId={next?.id} />
       </div>
+
+      {attempt.focus_log.length > 0 && (
+        <FocusLog
+          attemptId={attempt.id}
+          log={attempt.focus_log}
+          count={attempt.focus_count}
+          limit={exam.focus_limit}
+          ended={attempt.ended_by_focus}
+          canReset={attempt.section !== "done" && attempt.focus_count > 0}
+        />
+      )}
 
       <section>
         <h2 className="mb-3 text-xl font-bold">Олон сонголттой</h2>

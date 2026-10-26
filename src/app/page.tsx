@@ -20,6 +20,9 @@ export default function Home() {
             <span>Компьютер дээрх практик: код бичиж, ажиллуулж шалгана.</span>
           </li>
         </ul>
+        <p className="mt-6 max-w-md rounded-lg bg-warn-tint px-3 py-2 text-[0.95rem] text-warn">
+          Шалгалтын үеэр өөр таб, цонх руу шилжвэл багшид бүртгэгдэж, олон удаа гарвал шалгалт автоматаар дуусна.
+        </p>
       </section>
       <section className="rounded-2xl border border-line bg-surface p-6 md:p-8">
         <JoinForm />

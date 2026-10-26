@@ -1,8 +1,7 @@
 "use client";
 
 import type { Exam } from "@/lib/types";
-import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useState, useTransition } from "react";
+import { useActionState, useState, useTransition } from "react";
 import {
   allowRelogin,
   extendTime,
@@ -12,15 +11,6 @@ import {
   updateExamSettings,
   type FormState,
 } from "../../../actions";
-
-export function AutoRefresh({ seconds = 15 }: { seconds?: number }) {
-  const router = useRouter();
-  useEffect(() => {
-    const t = setInterval(() => router.refresh(), seconds * 1000);
-    return () => clearInterval(t);
-  }, [router, seconds]);
-  return null;
-}
 
 export function AttemptActions({ attemptId, section }: { attemptId: string; section: string }) {
   const [pending, start] = useTransition();
@@ -90,6 +80,13 @@ export function SettingsForm({ exam }: { exam: Exam }) {
         </label>
       </div>
       <p className="text-sm text-muted">Хугацааны өөрчлөлт шинээр эхлэх сурагчдад үйлчилнэ.</p>
+      <label className="flex flex-col gap-1">
+        <span className="font-semibold">Цонх солих хязгаар</span>
+        <input name="focus_limit" type="number" min={0} max={20} defaultValue={exam.focus_limit} className="field w-32" />
+        <span className="text-sm text-muted">
+          Сурагч өөр таб, цонх руу энэ олон удаа шилжвэл шалгалт автоматаар дуусна. 0 бол зөвхөн бүртгэнэ.
+        </span>
+      </label>
       {state.error && <p className="text-bad">{state.error}</p>}
       {state.ok && <p className="text-good">{state.ok}</p>}
       <button className="btn btn-primary self-start" disabled={pending}>

@@ -1,4 +1,5 @@
 import { examList } from "@/lib/admin";
+import { LiveRefresh } from "@/components/LiveRefresh";
 import Link from "next/link";
 import { OpenToggle } from "./OpenToggle";
 
@@ -11,7 +12,10 @@ export default async function AdminHome() {
       <p className="mt-2 max-w-2xl text-muted">
         Шалгалтыг нээгээд кодыг сурагчдад өгнө. Хувилбар А, Б-г зэргэлдээ суусан сурагчдад ээлжлэн өгнө.
       </p>
-      <div className="mt-8 flex flex-col gap-4">
+      <div className="mt-4">
+        <LiveRefresh topic="exams" />
+      </div>
+      <div className="mt-6 flex flex-col gap-4">
         {grades.map((grade) => {
           const variants = exams.filter((e) => e.grade === grade);
           return (

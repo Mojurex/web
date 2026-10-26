@@ -6,7 +6,8 @@ import { workspaceOwner, type Question } from "@/lib/types";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { OpenToggle } from "../../OpenToggle";
-import { AttemptActions, AutoRefresh, QuestionMover, RegenerateCode, SettingsForm } from "./ExamControls";
+import { LiveRefresh } from "@/components/LiveRefresh";
+import { AttemptActions, QuestionMover, RegenerateCode, SettingsForm } from "./ExamControls";
 
 const tabs = [
   ["students", "Сурагчид"],
@@ -93,12 +94,12 @@ async function Students({ examId, questions }: { examId: string; questions: Ques
   const attempts = await examAttempts(examId, questions);
   if (attempts.length === 0) {
     return (
-      <>
-        <AutoRefresh />
+      <div className="flex flex-col gap-3">
+        <LiveRefresh topic={`exam:${examId}`} />
         <p className="rounded-xl border border-dashed border-line p-8 text-center text-muted">
           Одоогоор сурагч ороогүй байна. Шалгалтыг нээгээд кодыг самбар дээр бичнэ үү.
         </p>
-      </>
+      </div>
     );
   }
   const maxA = questions.filter((q) => q.section === "A").reduce((s, q) => s + q.points, 0);
@@ -106,12 +107,11 @@ async function Students({ examId, questions }: { examId: string; questions: Ques
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-muted">Жагсаалт 15 секунд тутам шинэчлэгдэнэ.</p>
+        <LiveRefresh topic={`exam:${examId}`} />
         <a href={`/admin/exams/${examId}/export`} className="btn btn-ghost text-sm">
           Excel-д татах (CSV)
         </a>
       </div>
-      <AutoRefresh />
       <div className="overflow-x-auto rounded-xl border border-line bg-surface">
         <table className="w-full min-w-[48rem] text-left">
           <thead className="border-b border-line bg-paper text-sm text-muted">
@@ -149,6 +149,11 @@ async function Students({ examId, questions }: { examId: string; questions: Ques
                       {a.section === "A" ? "А хэсэг" : "Б хэсэг"} ·{" "}
                       <span className="text-muted">{timeLeft(a.section === "A" ? a.a_deadline : a.b_deadline)}</span>
                     </span>
+                  )}
+                  {a.focus_count > 0 && (
+                    <div className={a.ended_by_focus ? "font-semibold text-bad" : "text-warn"}>
+                      {a.ended_by_focus ? "Цонх сольсон тул дуусгасан" : `Цонхноос ${a.focus_count} удаа гарсан`}
+                    </div>
                   )}
                   {a.token_hash === null && a.section !== "done" && (
                     <div className="text-warn">Дахин нэвтрэхийг зөвшөөрсөн</div>

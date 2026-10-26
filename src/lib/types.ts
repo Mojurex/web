@@ -12,6 +12,7 @@ export type Exam = {
   is_open: boolean;
   section_a_minutes: number;
   section_b_minutes: number;
+  focus_limit: number;
   notes: string[];
   units: Unit[];
 };
@@ -79,8 +80,14 @@ export type Attempt = {
   b_deadline: Date | null;
   b_submitted_at: Date | null;
   note: string;
+  focus_count: number;
+  focus_log: FocusEvent[];
+  ended_by_focus: boolean;
   created_at: Date;
 };
+
+/** Сурагч шалгалтын цонхноос гарсан нэг тохиолдол. awayMs нь буцаж ирэхэд бөглөгдөнө. */
+export type FocusEvent = { at: string; section: Section; awayMs?: number };
 
 export type AnswerRow = {
   attempt_id: string;
