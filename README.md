@@ -1,36 +1,80 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Программчлалын шалгалт
 
-## Getting Started
+4, 6–12-р ангийн Программчлалын хичээлийн 1-р улирлын хөндлөнгийн шалгалтыг онлайнаар авах вэб.
+Асуулт, хариултын түлхүүр, рубрикийг `../materials/` доторх PDF-үүдээс `src/content/`-д хөрвүүлсэн.
 
-First, run the development server:
+## Юу хийдэг вэ
+
+**Сурагч** шалгалтын код, нэр, сурагчийн кодоо оруулж эхэлнэ.
+
+- **А хэсэг (онол, 20 мин):** олон сонголттой асуулт, нүд бөглөх, код бичих, блок схем зурах даалгавар.
+- **Б хэсэг (практик, 40 мин):** браузер дээр Python ажиллуулах (`input()` ажиллана), HTML/CSS-ийн шууд харагдац, олон файлтай React, блок схем зурагч.
+- Хариулт автоматаар хадгалагдана. Цаг дуусахад автоматаар илгээгдэнэ.
+- 4-р ангийн практик (10 хуруу, Scratch) компьютер дээр хуучнаараа явагдана, багш оноог нь самбарт оруулна.
+
+**Багш** (`/admin`):
+
+- Шалгалтыг нээж хаана, код үүсгэнэ, сурагчдын явцыг шууд харна.
+- Хугацаа сунгах, өөр компьютерээс үргэлжлүүлэхийг зөвшөөрөх, шалгалтыг дуусгах боломжтой.
+- Олон сонголттой асуулт болон нүдтэй даалгаврыг систем автоматаар шалгана.
+- Задгай, практик даалгаврыг багшийн хөтчийн рубрикээр (0.5-ын нарийвчлалтай) үнэлнэ. Сурагчийн кодыг тэнд нь ажиллуулж үзэх боломжтой.
+- Нэгж бүрийн дундаж гүйцэтгэлийг харна (60%-иас доош бол улаанаар тэмдэглэнэ). Дүнг Excel (CSV) хэлбэрээр татна.
+- Асуулт засах, нэмэх, устгах, багш нэмэх боломжтой.
+
+## Supabase + Vercel-д байршуулах
+
+1. **Supabase** дээр шинэ төсөл үүсгэнэ. Project Settings → Database → Connection string → **Transaction pooler** холбоосыг хуулна.
+2. Энэ хавтсанд `.env.local` файл үүсгээд `.env.example`-ийн дагуу `DATABASE_URL`, `SESSION_SECRET` утгуудыг бичнэ.
+3. Хүснэгтүүдийг үүсгэж, шалгалтуудыг болон өөрийн багшийн бүртгэлийг оруулна:
+   ```bash
+   npm install
+   npm run db:migrate
+   npm run db:seed -- --teacher таны@имэйл.mn "Таны нэр" нууцүг123
+   ```
+   Seed нь 16 шалгалт (8 анги × 2 хувилбар) оруулж, кодыг нь хэвлэнэ. Бүх шалгалт хаалттай байдлаар орно.
+   Дахин ажиллуулахад байгаа шалгалтыг дарж бичихгүй.
+4. **Vercel** дээр энэ хавтсыг (`web/`) төсөл болгон оруулна. Environment Variables хэсэгт `DATABASE_URL`, `DB_POOL_MAX=1`, `SESSION_SECRET` гурвыг нэмнэ.
+5. Байршсан хаягийн `/admin` хуудсаар нэвтэрнэ.
+
+## Локалд ажиллуулах
+
+Docker шаардлагагүй. PGlite нь локал Postgres болж ажиллана.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run db:local          # нэг терминалд: 5433 порт дээр Postgres
+cp .env.example .env.local
+# .env.local: DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5433/postgres
+#             DB_POOL_MAX=1, SESSION_SECRET=<openssl rand -hex 32>
+npm run db:migrate
+npm run db:seed -- --teacher teacher@test.mn "Туршилтын багш" testpass123
+npm run dev               # http://localhost:3000, багш: /admin
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Шалгах
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm test                  # автомат шалгалт, preview угсрагч, агуулгын бүрэн байдал
+npm run validate-content  # 16 хувилбар бүгд А = 40, Б = 60 оноотой эсэх
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Бүтэц
 
-## Learn More
+| Хавтас | Агуулга |
+|---|---|
+| `src/content/` | Анги бүрийн асуулт, түлхүүр, рубрик (PDF-ээс хөрвүүлсэн) |
+| `src/lib/grading.ts` | Автомат шалгалт (MCQ, нүд) |
+| `src/lib/exam.ts` | Сурагчийн нэвтрэх, хадгалах, илгээх, хугацааны хяналт |
+| `src/app/exam/` | Сурагчийн шалгалтын хуудас |
+| `src/app/admin/` | Багшийн самбар |
+| `src/components/` | Код засварлагч, Python консол, HTML/React preview, блок схем |
+| `public/py-worker.mjs` | Python-ийг ажиллуулах worker (Pyodide) |
+| `db/schema.sql` | Өгөгдлийн сангийн схем |
 
-To learn more about Next.js, take a look at the following resources:
+## Аюулгүй байдал
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Хариултын түлхүүр, рубрик зөвхөн сервер дээр байдаг тул сурагчийн хөтөч рүү илгээгддэггүй.
+- Хугацааг сервер шалгадаг. Хугацаа дууссаны дараа ирсэн хариултыг хүлээж авахгүй.
+- Нэг сурагчийн кодоор нэг л төхөөрөмж ашиглана. Өөр компьютерээс үргэлжлүүлэхийн тулд багш зөвшөөрөл өгнө.
+- Сурагчийн HTML/React код тусгаарлагдсан (`sandbox`) iframe-д ажилладаг тул багшийн хуудсанд нөлөөлөхгүй.
+- DB хүснэгтүүд дээр RLS асаалттай тул Supabase-ийн нийтийн API-аар уншиж болохгүй.
