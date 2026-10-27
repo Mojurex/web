@@ -21,7 +21,7 @@ export default function Home() {
           </li>
         </ul>
         <p className="mt-6 max-w-md rounded-lg bg-warn-tint px-3 py-2 text-[0.95rem] text-warn">
-          Шалгалтын үеэр өөр таб, цонх руу шилжвэл багшид бүртгэгдэж, олон удаа гарвал шалгалт автоматаар дуусна.
+          Шалгалтын үеэр өөр таб руу шилжвэл багшид бүртгэгдэж, олон удаа шилжвэл шалгалт автоматаар дуусна.
         </p>
       </section>
       <section className="rounded-2xl border border-line bg-surface p-6 md:p-8">

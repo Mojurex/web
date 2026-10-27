@@ -81,10 +81,10 @@ export function SettingsForm({ exam }: { exam: Exam }) {
       </div>
       <p className="text-sm text-muted">Хугацааны өөрчлөлт шинээр эхлэх сурагчдад үйлчилнэ.</p>
       <label className="flex flex-col gap-1">
-        <span className="font-semibold">Цонх солих хязгаар</span>
+        <span className="font-semibold">Таб солих хязгаар</span>
         <input name="focus_limit" type="number" min={0} max={20} defaultValue={exam.focus_limit} className="field w-32" />
         <span className="text-sm text-muted">
-          Сурагч өөр таб, цонх руу энэ олон удаа шилжвэл шалгалт автоматаар дуусна. 0 бол зөвхөн бүртгэнэ.
+          Сурагч өөр таб руу энэ олон удаа шилжвэл (эсвэл цонхоо жижигрүүлбэл) шалгалт автоматаар дуусна. 0 бол зөвхөн бүртгэнэ. Хаягийн мөр, өөр програм руу түр шилжихийг тоолохгүй, зөвхөн бүртгэнэ.
         </span>
       </label>
       {state.error && <p className="text-bad">{state.error}</p>}

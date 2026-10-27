@@ -392,13 +392,18 @@ export function FocusLog({
   canReset: boolean;
 }) {
   const [pending, start] = useTransition();
+  const tone = ended ? "bad" : count > 0 ? "warn" : "muted";
   return (
-    <section className={`rounded-xl border p-4 ${ended ? "border-bad bg-bad-tint" : "border-warn bg-warn-tint"}`}>
+    <section
+      className={`rounded-xl border p-4 ${
+        tone === "bad" ? "border-bad bg-bad-tint" : tone === "warn" ? "border-warn bg-warn-tint" : "border-line bg-surface"
+      }`}
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className={`font-bold ${ended ? "text-bad" : "text-warn"}`}>
+        <h2 className={`font-bold ${tone === "bad" ? "text-bad" : tone === "warn" ? "text-warn" : ""}`}>
           {ended
-            ? `Шалгалтын цонхноос ${count} удаа гарсан тул автоматаар дуусгасан`
-            : `Шалгалтын цонхноос гарсан: ${count}${limit > 0 ? `/${limit}` : ""}`}
+            ? `Өөр таб руу ${count} удаа шилжсэн тул автоматаар дуусгасан`
+            : `Таб сольсон: ${count}${limit > 0 ? `/${limit}` : ""}`}
         </h2>
         {canReset && (
           <button
@@ -422,10 +427,18 @@ export function FocusLog({
               {new Date(e.at).toLocaleTimeString("mn-MN", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false })}
             </span>
             <span>{e.section === "A" ? "А хэсэг" : "Б хэсэг"}</span>
+            <span className={e.kind === "window" ? "text-muted" : "font-semibold"}>
+              {e.kind === "window" ? "Хуудаснаас гадна дарсан" : "Таб сольсон"}
+            </span>
             <span className="text-muted">· {formatAway(e.awayMs)}</span>
           </li>
         ))}
       </ol>
+      {log.some((e) => e.kind === "window") && (
+        <p className="mt-2 text-sm text-muted">
+          «Хуудаснаас гадна дарсан» нь хаягийн мөр, хөтчийн popup эсвэл өөр програм дээр дарсан гэсэн үг. Тоологдохгүй.
+        </p>
+      )}
     </section>
   );
 }

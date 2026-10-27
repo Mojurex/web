@@ -86,8 +86,18 @@ export type Attempt = {
   created_at: Date;
 };
 
-/** Сурагч шалгалтын цонхноос гарсан нэг тохиолдол. awayMs нь буцаж ирэхэд бөглөгдөнө. */
-export type FocusEvent = { at: string; section: Section; awayMs?: number };
+/**
+ * tab: өөр таб руу шилжсэн, цонхоо жижигрүүлсэн (хуудас харагдахгүй болсон) — тоологдоно.
+ * window: хуудас харагдаж байгаа ч focus алдсан (хаягийн мөр, хөтчийн popup, өөр програм) —
+ * зөвхөн багшид харагдана.
+ */
+export type FocusKind = "tab" | "window";
+
+/**
+ * Сурагч шалгалтын цонхноос гарсан нэг тохиолдол. awayMs нь буцаж ирэхэд бөглөгдөнө.
+ * kind, id-гүй хуучин бичлэг нь tab гэсэн үг.
+ */
+export type FocusEvent = { at: string; section: Section; kind?: FocusKind; id?: string; awayMs?: number };
 
 export type AnswerRow = {
   attempt_id: string;

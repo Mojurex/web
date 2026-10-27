@@ -2,7 +2,7 @@ import "server-only";
 import { autoScore } from "./grading";
 import { sql } from "./db";
 import { issueAttemptCookie, readAttemptCookie } from "./session";
-import type { AnswerResponse, Attempt, Exam, PublicQuestion, Question, Section } from "./types";
+import type { AnswerResponse, Attempt, Exam, FocusEvent, FocusKind, PublicQuestion, Question, Section } from "./types";
 import { isOnlineTask } from "./types";
 
 /** Хугацаа дууссаны дараа сүүлийн хадгалалтыг хүлээн авах хугацаа. */
@@ -98,6 +98,22 @@ export type SaveResult = { ok: true } | { ok: false; error: string; ended?: bool
 
 export async function saveAnswer(questionId: string, response: AnswerResponse): Promise<SaveResult> {
   if (JSON.stringify(response).length > 300_000) return { ok: false, error: "Хариулт хэт урт байна." };
+  const cookie = await readAttemptCookie();
+  if (!cookie) return { ok: false, error: "Шалгалтын холболт тасарсан. Хуудсаа дахин ачаална уу.", ended: true };
+  // Хамгийн олон дуудагддаг хүсэлт тул бүх шалгалтыг нэг query-д: зөв сурагч, одоогийн
+  // хэсгийн асуулт, хугацаа дуусаагүй. Мөр буцаахгүй бол доор шалтгааныг тодруулна.
+  const saved = await sql`
+    insert into answers (attempt_id, question_id, response, updated_at)
+    select a.id, q.id, ${sql.json(response as never)}, now()
+    from attempts a join questions q on q.exam_id = a.exam_id and q.section = a.section
+    where a.id = ${cookie.attemptId} and a.token_hash = ${cookie.tokenHash} and q.id = ${questionId}
+      and now() <= (case a.section when 'A' then a.a_deadline else a.b_deadline end)
+        + make_interval(secs => ${GRACE_MS / 1000})
+    on conflict (attempt_id, question_id)
+    do update set response = excluded.response, updated_at = now()
+    returning 1`;
+  if (saved.length > 0) return { ok: true };
+
   const attempt = await attemptFromCookie();
   if (!attempt) return { ok: false, error: "Шалгалтын холболт тасарсан. Хуудсаа дахин ачаална уу.", ended: true };
   const deadline = deadlineOf(attempt);
@@ -107,12 +123,8 @@ export async function saveAnswer(questionId: string, response: AnswerResponse): 
   const [q] = await sql<{ section: Section }[]>`
     select section from questions where id = ${questionId} and exam_id = ${attempt.exam_id}`;
   if (!q || q.section !== attempt.section) return { ok: false, error: "Энэ асуулт одоогийн хэсэгт хамаарахгүй." };
-  await sql`
-    insert into answers (attempt_id, question_id, response, updated_at)
-    values (${attempt.id}, ${questionId}, ${sql.json(response as never)}, now())
-    on conflict (attempt_id, question_id)
-    do update set response = excluded.response, updated_at = now()`;
-  return { ok: true };
+  // Серверийн цаг DB-ийнхээс зөрсөн хил дээрх тохиолдол.
+  return { ok: false, error: "Энэ хэсгийн хугацаа дууссан.", ended: true };
 }
 
 /** Хэсгийн хариултуудыг автоматаар шалгаад дараагийн хэсэг рүү шилжүүлнэ. */
@@ -174,39 +186,54 @@ export async function endAttempt(attempt: Attempt): Promise<Attempt> {
   return current;
 }
 
+const clampMs = (ms: number) => Math.max(0, Math.min(Math.round(ms), 24 * 3600_000));
+
 /**
- * Сурагч шалгалтын цонхноос гарсныг бүртгэнэ. Тоолуур сервер дээр байдаг тул
- * хуудсыг дахин ачаалж тэглэх боломжгүй. Хязгаарт хүрвэл шалгалтыг дуусгана.
+ * Сурагч шалгалтын цонхноос гарсныг бүртгэнэ. Зөвхөн tab тоологдоно; тоолуур сервер
+ * дээр байдаг тул хуудсыг дахин ачаалж тэглэх боломжгүй. Хязгаарт хүрвэл шалгалтыг
+ * дуусгана. id нь клиентээс ирэх тул дахин илгээсэн ч хоёр удаа тоологдохгүй.
+ * awayMs: хөтөч далд табын timer-ийг зогсоосон бол буцаж ирэхэд л мэдэгдэнэ.
  */
-export async function recordFocusLeave(): Promise<FocusResult | null> {
+export async function recordFocusLeave(kind: FocusKind, id: string, awayMs?: number): Promise<FocusResult | null> {
   const attempt = await attemptFromCookie();
   if (!attempt || attempt.section === "done") return null;
-  const event = { at: new Date().toISOString(), section: attempt.section };
-  const [row] = await sql<{ focus_count: number; focus_limit: number }[]>`
+  const event: FocusEvent = {
+    at: new Date(Date.now() - (awayMs ?? 0)).toISOString(),
+    section: attempt.section,
+    kind,
+    id,
+    ...(awayMs !== undefined && { awayMs: clampMs(awayMs) }),
+  };
+  const [inserted] = await sql<{ focus_count: number; focus_limit: number }[]>`
     update attempts a set
-      focus_count = a.focus_count + 1,
+      focus_count = a.focus_count + ${kind === "tab" ? 1 : 0},
       focus_log = a.focus_log || ${sql.json([event])}
     from exams e
-    where a.id = ${attempt.id} and e.id = a.exam_id
+    where a.id = ${attempt.id} and e.id = a.exam_id and not a.focus_log @> ${sql.json([{ id }])}
     returning a.focus_count, e.focus_limit`;
+  // Дахин илгээлт: өмнөх оролдлого тоолоод дуусгаж амжаагүй байж болох тул одоогийн тоогоор шийднэ.
+  const [row] = inserted
+    ? [inserted]
+    : await sql<{ focus_count: number; focus_limit: number }[]>`
+        select a.focus_count, e.focus_limit from attempts a join exams e on e.id = a.exam_id where a.id = ${attempt.id}`;
   const ended = row.focus_limit > 0 && row.focus_count >= row.focus_limit;
   if (ended) {
     const done = await endAttempt(attempt);
     await sql`
       update attempts set ended_by_focus = true,
-        note = trim(note || ' Шалгалтын цонхноос ' || ${row.focus_count}::text || ' удаа гарсан тул автоматаар дуусгав.')
+        note = trim(note || ' Өөр таб руу ' || ${row.focus_count}::text || ' удаа шилжсэн тул автоматаар дуусгав.')
       where id = ${done.id}`;
   }
   return { count: row.focus_count, limit: row.focus_limit, ended };
 }
 
-/** Буцаж ирэхэд сүүлийн тохиолдлын хугацааг бичнэ. */
-export async function recordFocusReturn(awayMs: number): Promise<void> {
+/** Буцаж ирэхэд тухайн тохиолдлын хугацааг бичнэ. */
+export async function recordFocusReturn(id: string, awayMs: number): Promise<void> {
   const attempt = await attemptFromCookie();
-  if (!attempt || attempt.focus_log.length === 0) return;
-  const ms = Math.max(0, Math.min(Math.round(awayMs), 24 * 3600_000));
+  if (!attempt) return;
   await sql`
-    update attempts set focus_log = jsonb_set(
-      focus_log, array[(jsonb_array_length(focus_log) - 1)::text, 'awayMs'], to_jsonb(${ms}::int))
-    where id = ${attempt.id} and jsonb_array_length(focus_log) > 0`;
+    update attempts set focus_log = (
+      select jsonb_agg(case when e->>'id' = ${id} then e || jsonb_build_object('awayMs', ${clampMs(awayMs)}::int) else e end order by i)
+      from jsonb_array_elements(focus_log) with ordinality as t(e, i))
+    where id = ${attempt.id} and focus_log @> ${sql.json([{ id }])}`;
 }

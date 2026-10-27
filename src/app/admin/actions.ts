@@ -96,7 +96,7 @@ export async function forceSubmit(attemptId: string) {
 export async function resetFocus(attemptId: string) {
   await requireTeacher();
   await sql`
-    update attempts set focus_count = 0, note = trim(note || ' Цонх солих тоолуурыг багш тэглэв.')
+    update attempts set focus_count = 0, note = trim(note || ' Таб солих тоолуурыг багш тэглэв.')
     where id = ${attemptId}`;
   revalidatePath("/admin", "layout");
 }

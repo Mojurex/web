@@ -23,7 +23,7 @@ export default async function ExamPage() {
         </p>
         {attempt.ended_by_focus && (
           <p className="rounded-lg bg-bad-tint px-3 py-2 text-bad">
-            Шалгалтын цонхноос {attempt.focus_count} удаа гарсан тул шалгалт автоматаар дууссан. Энэ тухай багшид
+            Өөр таб руу {attempt.focus_count} удаа шилжсэн тул шалгалт автоматаар дууссан. Энэ тухай багшид
             мэдэгдсэн.
           </p>
         )}

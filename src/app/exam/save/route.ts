@@ -17,7 +17,9 @@ export async function POST(req: Request) {
     return Response.json({ ok: false, error: "Буруу хүсэлт." }, { status: 400 });
   }
   const { questionId, response } = body;
-  if (typeof questionId !== "string" || typeof response !== "object" || response === null) {
+  // uuid биш id нь DB-д алдаа өгч, клиент 5xx-ийг дахин оролдох тул энд татгалзана.
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (typeof questionId !== "string" || !uuid.test(questionId) || typeof response !== "object" || response === null) {
     return Response.json({ ok: false, error: "Буруу хүсэлт." }, { status: 400 });
   }
   try {

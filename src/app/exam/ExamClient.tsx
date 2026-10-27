@@ -191,8 +191,8 @@ export function ExamClient(props: Props) {
     setSubmitError(true);
   }, [flush, router, section]);
 
-  const focus = useFocusGuard({ enabled: !submitting, beforeLeave: flush, onEnded });
-  const focusCount = focus.warning?.count ?? props.focusCount;
+  const focus = useFocusGuard({ enabled: !submitting, initialCount: props.focusCount, beforeLeave: flush, onEnded });
+  const focusCount = focus.count;
 
   // Б хэсэгт workspace хуваалцдаг даалгавруудыг нэг таб болгоно.
   const groups = useMemo(() => {
@@ -221,7 +221,7 @@ export function ExamClient(props: Props) {
           </div>
           {focusCount > 0 && (
             <span className="rounded-full bg-warn-tint px-2.5 py-0.5 text-sm font-semibold text-warn">
-              Цонхноос гарсан: {focusCount}
+              Таб сольсон: {focusCount}
               {props.focusLimit > 0 && `/${props.focusLimit}`}
             </span>
           )}
@@ -289,8 +289,8 @@ export function ExamClient(props: Props) {
           </button>
           {section === "A" && (
             <p className="mt-4 text-sm text-muted">
-              Шалгалтын үеэр өөр таб, цонх руу шилжвэл багшид бүртгэгдэнэ.
-              {props.focusLimit > 0 && ` ${props.focusLimit} удаа гарвал шалгалт автоматаар дуусна.`}
+              Шалгалтын үеэр өөр таб руу шилжих, цонхоо жижигрүүлэхийг багш харна.
+              {props.focusLimit > 0 && ` ${props.focusLimit} удаа шилжвэл шалгалт автоматаар дуусна.`}
             </p>
           )}
         </nav>
@@ -327,7 +327,7 @@ export function ExamClient(props: Props) {
         <div className="fixed inset-0 z-40 grid place-items-center bg-ink/60 p-4" role="alertdialog" aria-modal aria-labelledby="focus-title">
           <div className="w-full max-w-md rounded-2xl border-t-4 border-warn bg-surface p-6">
             <h2 id="focus-title" className="text-xl font-bold">
-              Та шалгалтын цонхноос гарлаа
+              Та өөр таб руу шилжлээ
             </h2>
             <p className="mt-3">
               Энэ нь {focus.warning.count} дахь удаа бөгөөд багшид бүртгэгдлээ.

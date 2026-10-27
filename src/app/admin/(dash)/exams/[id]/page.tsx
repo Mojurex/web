@@ -152,7 +152,7 @@ async function Students({ examId, questions }: { examId: string; questions: Ques
                   )}
                   {a.focus_count > 0 && (
                     <div className={a.ended_by_focus ? "font-semibold text-bad" : "text-warn"}>
-                      {a.ended_by_focus ? "Цонх сольсон тул дуусгасан" : `Цонхноос ${a.focus_count} удаа гарсан`}
+                      {a.ended_by_focus ? "Таб сольсон тул дуусгасан" : `Таб сольсон: ${a.focus_count}`}
                     </div>
                   )}
                   {a.token_hash === null && a.section !== "done" && (
