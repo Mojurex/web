@@ -167,6 +167,7 @@ export function ExamClient(props: Props) {
   const [answers, setAnswers] = useState(props.initialAnswers);
   const [submitting, setSubmitting] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [submitError, setSubmitError] = useState(false);
   const offset = useMemo(() => props.serverNow - Date.now(), [props.serverNow]);
 
   const onEnded = useCallback(() => router.refresh(), [router]);
@@ -179,9 +180,15 @@ export function ExamClient(props: Props) {
 
   const submit = useCallback(async () => {
     setSubmitting(true);
-    await flush();
-    await submitSectionAction(section);
-    router.refresh();
+    setSubmitError(false);
+    // Сервер түр гацвал хэдэн удаа дахин оролдоно.
+    for (let i = 0; i < 4; i++) {
+      if (i > 0) await new Promise((r) => setTimeout(r, 3000));
+      if (!(await flush())) continue;
+      if (await submitSectionAction(section).then(() => true, () => false)) return router.refresh();
+    }
+    setSubmitting(false);
+    setSubmitError(true);
   }, [flush, router, section]);
 
   const focus = useFocusGuard({ enabled: !submitting, beforeLeave: flush, onEnded });
@@ -218,7 +225,13 @@ export function ExamClient(props: Props) {
               {props.focusLimit > 0 && `/${props.focusLimit}`}
             </span>
           )}
-          <SaveBadge status={status} error={error} />
+          {submitError ? (
+            <span role="alert" className="text-sm text-bad">
+              Илгээж чадсангүй. Дахин илгээнэ үү.
+            </span>
+          ) : (
+            <SaveBadge status={status} error={error} />
+          )}
           <Timer
             deadline={props.deadline}
             serverNow={props.serverNow}
@@ -345,6 +358,11 @@ export function ExamClient(props: Props) {
             {unanswered > 0 && (
               <p className="mt-3 rounded-lg bg-warn-tint px-3 py-2 text-warn">
                 {unanswered} {section === "A" ? "асуултад" : "даалгаварт"} хариулаагүй байна.
+              </p>
+            )}
+            {submitError && (
+              <p className="mt-3 rounded-lg bg-bad-tint px-3 py-2 text-bad">
+                Сервер хариу өгсөнгүй. Хэсэг хүлээгээд дахин «Илгээх» дарна уу.
               </p>
             )}
             <div className="mt-6 flex justify-end gap-2">

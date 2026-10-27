@@ -125,11 +125,15 @@ export async function submitSection(attempt: Attempt, section: Section): Promise
       select question_id, response from answers where attempt_id = ${attempt.id}`;
     const byId = new Map(responses.map((r) => [r.question_id, r.response]));
 
-    for (const q of questions.filter((q) => q.section === section && (q.type !== "task" || isOnlineTask(q)))) {
-      const scores = autoScore(q, byId.get(q.id));
+    // Нэг query-гээр: илгээх үед олон сурагч зэрэг ирдэг тул транзакцийг богино байлгана.
+    const scored = questions
+      .filter((q) => q.section === section && (q.type !== "task" || isOnlineTask(q)))
+      .map((q) => ({ question_id: q.id, item_scores: autoScore(q, byId.get(q.id)) }));
+    if (scored.length > 0) {
       await tx`
         insert into answers (attempt_id, question_id, item_scores)
-        values (${attempt.id}, ${q.id}, ${tx.json(scores)})
+        select ${attempt.id}, x.question_id, x.item_scores
+        from jsonb_to_recordset(${tx.json(scored)}) as x(question_id uuid, item_scores jsonb)
         on conflict (attempt_id, question_id) do update set item_scores = excluded.item_scores`;
     }
 

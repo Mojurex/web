@@ -21,7 +21,7 @@ export function useFocusGuard({
 }: {
   enabled: boolean;
   /** Гарахаас өмнө хадгалагдаагүй хариултыг хадгална. */
-  beforeLeave: () => Promise<void>;
+  beforeLeave: () => Promise<unknown>;
   onEnded: () => void;
 }) {
   const [warning, setWarning] = useState<FocusWarning | null>(null);

@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { ExamClient } from "./ExamClient";
 
 export const dynamic = "force-dynamic";
+// Хуудас болон түүний server action-ууд (илгээх, focus). Гацсан хүсэлтийг 300 с хүлээлгэхгүй.
+export const maxDuration = 30;
 
 export default async function ExamPage() {
   const attempt = await currentAttempt();

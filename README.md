@@ -34,7 +34,7 @@
    ```
    Seed нь 16 шалгалт (8 анги × 2 хувилбар) оруулж, кодыг нь хэвлэнэ. Бүх шалгалт хаалттай байдлаар орно.
    Дахин ажиллуулахад байгаа шалгалтыг дарж бичихгүй.
-4. **Vercel** дээр энэ хавтсыг (`web/`) төсөл болгон оруулна. Environment Variables хэсэгт `DATABASE_URL`, `DB_POOL_MAX=1`, `SESSION_SECRET`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` хувьсагчдыг нэмнэ. Function Region-ийг Supabase-тай ижил бүсэд тохируулна.
+4. **Vercel** дээр энэ хавтсыг (`web/`) төсөл болгон оруулна. Environment Variables хэсэгт `DATABASE_URL`, `DB_POOL_MAX=5`, `SESSION_SECRET`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` хувьсагчдыг нэмнэ. Function Region-ийг Supabase-тай ижил бүсэд тохируулна.
 5. Байршсан хаягийн `/admin` хуудсаар нэвтэрнэ.
 
 ## Supabase Realtime
@@ -50,7 +50,7 @@ npm install
 npm run db:local          # нэг терминалд: 5433 порт дээр Postgres
 cp .env.example .env.local
 # .env.local: DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5433/postgres
-#             DB_POOL_MAX=1, SESSION_SECRET=<openssl rand -hex 32>
+#             DB_POOL_MAX=5, SESSION_SECRET=<openssl rand -hex 32>
 npm run db:migrate
 npm run db:seed -- --teacher teacher@test.mn "Туршилтын багш" testpass123
 npm run dev               # http://localhost:3000, багш: /admin
