@@ -72,6 +72,15 @@ async function attemptFromCookie(): Promise<Attempt | null> {
 export async function currentAttempt(): Promise<Attempt | null> {
   let attempt = await attemptFromCookie();
   if (!attempt) return null;
+  if (attempt.section === "B" && !attempt.b_deadline) {
+    // Багш Б хэсгийг дараа нь нээсэн: цаг нь сурагч хуудсаа нээхэд эхэлнэ.
+    const [started] = await sql<Attempt[]>`
+      update attempts a set b_started_at = now(), b_deadline = now() + make_interval(mins => e.section_b_minutes)
+      from exams e
+      where a.id = ${attempt.id} and e.id = a.exam_id and a.b_deadline is null
+      returning a.*`;
+    if (started) attempt = started;
+  }
   const now = Date.now();
   if (attempt.section === "A" && now > attempt.a_deadline.getTime() + GRACE_MS) {
     attempt = await submitSection(attempt, "A");

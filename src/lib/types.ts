@@ -1,4 +1,5 @@
-import type { ResponseInput, RubricItem, Tool, Unit } from "@/content/types";
+import type { ResponseInput, RubricItem, Tool, TypingSpec, Unit } from "@/content/types";
+import type { TypingResponse } from "./typing";
 
 export type Section = "A" | "B";
 
@@ -25,6 +26,7 @@ export type TaskPayload = {
   files: Record<string, string>;
   images: Record<string, string>;
   workspace: string | null;
+  typing?: TypingSpec | null;
   parts: TaskPartPublic[];
 };
 
@@ -64,6 +66,7 @@ export type AnswerResponse = {
   files?: Record<string, string>;
   flowchart?: FlowNode[];
   notes?: string;
+  typing?: TypingResponse;
 };
 
 export type Attempt = {

@@ -7,6 +7,7 @@ import {
   extendTime,
   forceSubmit,
   moveQuestion,
+  openSectionB,
   regenerateCode,
   updateExamSettings,
   type FormState,
@@ -113,5 +114,35 @@ export function RegenerateCode({ examId }: { examId: string }) {
         Шинэ код үүсгэх
       </button>
     </section>
+  );
+}
+
+/** Б хэсгийг өгөлгүй дууссан сурагчдад Б хэсгийг нээнэ. */
+export function OpenSectionB({ examId, count }: { examId: string; count: number }) {
+  const [pending, start] = useTransition();
+  const [opened, setOpened] = useState<number | null>(null);
+  if (opened !== null) {
+    return (
+      <p className="rounded-xl bg-good-tint px-4 py-3 text-good" role="status">
+        {opened} сурагчид Б хэсгийг нээлээ. Сурагчид нүүр хуудаснаас шалгалтын код, сурагчийн кодоо дахин оруулж орно.
+        Цаг нь сурагч бүрийг орж ирэхэд эхэлнэ.
+      </p>
+    );
+  }
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-warn bg-warn-tint px-4 py-3">
+      <p className="text-warn">{count} сурагч А хэсгийг өгөөд Б хэсгийг өгөөгүй дууссан байна.</p>
+      <button
+        type="button"
+        className="btn btn-primary text-sm"
+        disabled={pending}
+        onClick={() =>
+          confirm(`${count} сурагчид Б хэсгийг нээх үү? Тэд кодоороо дахин орж Б хэсгийг гүйцэтгэнэ.`) &&
+          start(async () => setOpened(await openSectionB(examId)))
+        }
+      >
+        Б хэсгийг нээх
+      </button>
+    </div>
   );
 }

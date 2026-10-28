@@ -22,6 +22,7 @@ const toolOptions: [Tool, string][] = [
   ["react", "React"],
   ["flowchart", "Блок схем"],
   ["notes", "Тэмдэглэл"],
+  ["typing", "Шивэх дасгал"],
 ];
 
 function inputToString(i: ResponseInput | undefined): string {
@@ -61,6 +62,8 @@ export function QuestionEditor({ examId, question, section }: { examId: string; 
       .join("\n"),
   );
   const [parts, setParts] = useState<TaskPartPublic[]>(task?.parts ?? [{ n: "", text: "", points: 0 }]);
+  const [typingText, setTypingText] = useState(task?.typing?.text ?? "");
+  const [typingSeconds, setTypingSeconds] = useState(task?.typing?.seconds ?? 180);
   const [previewBlanks, setPreviewBlanks] = useState<Record<string, string>>({});
 
   const rubricSum = rubric.reduce((s, r) => s + (Number(r.points) || 0), 0);
@@ -97,6 +100,7 @@ export function QuestionEditor({ examId, question, section }: { examId: string; 
                 .filter(([n, e]) => n && e),
             ),
             workspace: workspace.trim() || null,
+            typing: !offline && tools.includes("typing") ? { text: typingText.trim(), seconds: Number(typingSeconds) } : null,
             parts: parts.map((p) => ({ ...p, points: Number(p.points) })),
           }
         : undefined,
@@ -209,7 +213,27 @@ export function QuestionEditor({ examId, question, section }: { examId: string; 
                 </div>
               )}
             </fieldset>
-            {!offline && (
+            {!offline && tools.includes("typing") && (
+              <div className="grid gap-4 sm:grid-cols-[1fr_10rem]">
+                <label className="flex flex-col gap-1">
+                  <Label>Шивэх текст</Label>
+                  <textarea className="field min-h-28" value={typingText} onChange={(e) => setTypingText(e.target.value)} />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <Label>Хугацаа (секунд)</Label>
+                  <input
+                    className="field"
+                    type="number"
+                    min={30}
+                    max={1800}
+                    value={typingSeconds}
+                    onChange={(e) => setTypingSeconds(Number(e.target.value))}
+                  />
+                  <span className="text-sm text-muted">180 = 3 минут</span>
+                </label>
+              </div>
+            )}
+            {!offline && tools.some((t) => t !== "typing") && (
               <>
                 <div className="flex flex-col gap-2">
                   <Label>Эхлэх файлууд</Label>

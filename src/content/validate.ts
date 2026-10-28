@@ -59,8 +59,15 @@ export function validateGrade(g: GradeContent): string[] {
         if (r !== p.points) at(p.n, `рубрик ${r} ≠ ${p.points}`);
         if (!p.n.startsWith(`${t.n}.`)) at(p.n, `${t.n}-д хамаарахгүй дугаар`);
       }
-      if (t.tools !== "offline" && t.tools.some((x) => x !== "flowchart" && x !== "notes") && !t.files)
-        at(t.n, "эхлэх файл алга");
+      const codeTools = ["python", "web", "react"];
+      if (t.tools !== "offline" && t.tools.some((x) => codeTools.includes(x)) && !t.files) at(t.n, "эхлэх файл алга");
+      const typing = t.tools !== "offline" && t.tools.includes("typing");
+      if (typing && !(t.typing?.text.trim() && t.typing.seconds > 0)) at(t.n, "шивэх текст, хугацаа алга");
+      for (const r of t.parts.flatMap((p) => p.rubric).filter((r) => r.typing)) {
+        if (!typing) at(t.n, `«${r.label}» шивэх дасгалгүй даалгаварт`);
+        const top = Math.max(...r.typing!.levels.map(([, pts]) => pts));
+        if (top !== r.points) at(t.n, `«${r.label}» дээд шатлал ${top} ≠ ${r.points}`);
+      }
     }
   }
   return errors;

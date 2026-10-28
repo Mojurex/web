@@ -2,12 +2,12 @@ import type { Unit } from "@/content/types";
 import { examAttempts, itemScoresByAttempt } from "@/lib/admin";
 import { fullQuestions, getExam } from "@/lib/exam";
 import { unitAverages } from "@/lib/scoring";
-import { workspaceOwner, type Question } from "@/lib/types";
+import { isOnlineTask, workspaceOwner, type Question } from "@/lib/types";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { OpenToggle } from "../../OpenToggle";
 import { LiveRefresh } from "@/components/LiveRefresh";
-import { AttemptActions, QuestionMover, RegenerateCode, SettingsForm } from "./ExamControls";
+import { AttemptActions, OpenSectionB, QuestionMover, RegenerateCode, SettingsForm } from "./ExamControls";
 
 const tabs = [
   ["students", "Сурагчид"],
@@ -104,8 +104,12 @@ async function Students({ examId, questions }: { examId: string; questions: Ques
   }
   const maxA = questions.filter((q) => q.section === "A").reduce((s, q) => s + q.points, 0);
   const maxB = questions.filter((q) => q.section === "B").reduce((s, q) => s + q.points, 0);
+  const missedB = questions.some((q) => q.section === "B" && isOnlineTask(q))
+    ? attempts.filter((a) => a.section === "done" && !a.b_started_at && !a.ended_by_focus).length
+    : 0;
   return (
     <div className="flex flex-col gap-3">
+      {missedB > 0 && <OpenSectionB examId={examId} count={missedB} />}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <LiveRefresh topic={`exam:${examId}`} />
         <a href={`/admin/exams/${examId}/export`} className="btn btn-ghost text-sm">

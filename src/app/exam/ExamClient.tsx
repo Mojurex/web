@@ -443,6 +443,7 @@ function TaskView({
           tools={tools}
           initialFiles={owner.payload.files}
           images={owner.payload.images}
+          typing={owner.payload.typing}
           value={value}
           onChange={onChange}
         />

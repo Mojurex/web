@@ -92,6 +92,25 @@ export async function forceSubmit(attemptId: string) {
   revalidatePath("/admin", "layout");
 }
 
+/**
+ * Б хэсгийг өгөлгүй дууссан сурагчдад (жишээ нь Б хэсэг офлайн байх үед өгсөн) Б хэсгийг
+ * нээнэ. Цаг нь сурагч хуудсаа нээхэд эхэлнэ. Cookie нь хүчингүй болсон байж болох тул
+ * код, сурагчийн кодоороо дахин орох боломжтой болгоно.
+ */
+export async function openSectionB(examId: string): Promise<number> {
+  await requireTeacher();
+  const rows = await sql`
+    update attempts a set section = 'B', b_started_at = null, b_deadline = null, b_submitted_at = null,
+      token_hash = null, note = trim(a.note || ' Б хэсгийг багш дараа нь нээв.')
+    where a.exam_id = ${examId} and a.section = 'done' and a.b_started_at is null and not a.ended_by_focus
+      and exists (
+        select 1 from questions q
+        where q.exam_id = a.exam_id and q.section = 'B' and q.type = 'task' and q.payload->>'tools' <> 'offline')
+    returning a.id`;
+  revalidatePath("/admin", "layout");
+  return rows.length;
+}
+
 /** Санамсаргүй гарсан тохиолдолд цонх солих тоолуурыг тэглэнэ (бүртгэл хадгалагдана). */
 export async function resetFocus(attemptId: string) {
   await requireTeacher();
@@ -184,6 +203,11 @@ function draftError(d: QuestionDraft): string | null {
     if (!d.task?.title) return "Даалгаврын гарчиг хоосон байна.";
     const tools = d.task.tools;
     if (tools !== "offline" && (!Array.isArray(tools) || tools.length === 0)) return "Ажлын орчноо сонгоно уу.";
+    if (Array.isArray(tools) && tools.includes("typing")) {
+      const typing = d.task.typing as { text?: string; seconds?: number } | null | undefined;
+      if (!typing?.text?.trim()) return "Шивэх текстээ бичнэ үү.";
+      if (!(Number(typing.seconds) >= 30 && Number(typing.seconds) <= 1800)) return "Шивэх хугацаа 30–1800 секунд байна.";
+    }
   }
   return null;
 }

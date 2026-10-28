@@ -59,6 +59,7 @@ export function questionRows(v: ExamVariant): QuestionRow[] {
       files: t.files ?? {},
       images: t.images ?? {},
       workspace: t.workspace ?? null,
+      typing: t.typing ?? null,
       parts: t.parts.map((p) => ({ n: p.n, text: p.text, points: p.points })),
     },
     answer_key: { key: t.key ?? "" },

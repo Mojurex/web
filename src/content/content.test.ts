@@ -24,4 +24,20 @@ describe("агуулга", () => {
       }
     }
   });
+
+  it("шивэх дасгал: бүтэн текстийг алдаагүй, хурдан шивбэл автомат хэсэг бүтэн оноотой, арга барил багшид", () => {
+    for (const g of grades) {
+      for (const v of Object.values(g.variants)) {
+        for (const t of v.sectionB) {
+          if (!t.typing) continue;
+          const rubric = t.parts.flatMap((p) => p.rubric);
+          const q = { type: "task" as const, points: t.points, answer_key: {}, rubric, payload: { typing: t.typing } };
+          const fast = { typing: { typed: t.typing.text, startedAt: 1, elapsedMs: 60_000, done: true } };
+          expect(autoScore(q, fast), `${g.grade} ${t.n}`).toEqual(rubric.map((r) => (r.typing ? r.points : null)));
+          // Шивээгүй бол автомат хэсэг 0.
+          expect(autoScore(q, {}).filter((x) => x !== null).every((x) => x === 0)).toBe(true);
+        }
+      }
+    }
+  });
 });

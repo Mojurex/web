@@ -13,6 +13,8 @@ export type RubricItem = {
    * хасах тэмдгийг ялгахгүй). "~" -ээр эхэлбэл доторх бүх үг агуулагдсан эсэхийг шалгана.
    */
   accept?: string[];
+  /** Шивэх дасгалын хурд (үг/мин) эсвэл нарийвчлал (%)-аар шатлан автоматаар өгнө. */
+  typing?: { metric: "wpm" | "accuracy"; levels: [min: number, points: number][] };
 };
 
 export type ResponseInput =
@@ -45,7 +47,9 @@ export type OpenQuestion = {
 
 export type Question = McqQuestion | OpenQuestion;
 
-export type Tool = "python" | "web" | "react" | "flowchart" | "notes";
+export type Tool = "python" | "web" | "react" | "flowchart" | "notes" | "typing";
+
+export type TypingSpec = { text: string; seconds: number };
 
 export type TaskPart = {
   n: string;
@@ -68,6 +72,8 @@ export type PracticalTask = {
   workspace?: string;
   /** Хуудсанд ашиглах бэлэн зургууд: файлын нэр → дүрслэх emoji. */
   images?: Record<string, string>;
+  /** tools-д "typing" байвал: шивэх текст ба хугацаа. */
+  typing?: TypingSpec;
   parts: TaskPart[];
   key?: string;
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import type { Tool } from "@/content/types";
+import type { Tool, TypingSpec } from "@/content/types";
 import type { AnswerResponse } from "@/lib/types";
 import dynamic from "next/dynamic";
 import { useState } from "react";
@@ -14,6 +14,7 @@ const CodeEditor = dynamic(() => import("./CodeEditor").then((m) => m.CodeEditor
 });
 const PythonRunner = dynamic(() => import("./PythonRunner").then((m) => m.PythonRunner), { ssr: false });
 const Preview = dynamic(() => import("./Preview").then((m) => m.Preview), { ssr: false });
+const TypingTest = dynamic(() => import("./TypingTest").then((m) => m.TypingTest), { ssr: false });
 
 const toolNames: Record<Tool, string> = {
   python: "Python",
@@ -21,6 +22,7 @@ const toolNames: Record<Tool, string> = {
   react: "React",
   flowchart: "Блок схем",
   notes: "Тэмдэглэл",
+  typing: "Шивэх",
 };
 
 const validFileName = /^[A-Za-z0-9_-]+(\/[A-Za-z0-9_-]+)*\.(html|css|jsx|js)$/;
@@ -184,6 +186,7 @@ export function Workspace({
   tools,
   initialFiles,
   images,
+  typing,
   value,
   onChange,
   readOnly = false,
@@ -191,6 +194,7 @@ export function Workspace({
   tools: Tool[];
   initialFiles: Record<string, string>;
   images: Record<string, string>;
+  typing?: TypingSpec | null;
   value: AnswerResponse;
   onChange?: (v: AnswerResponse) => void;
   readOnly?: boolean;
@@ -230,6 +234,12 @@ export function Workspace({
             aria-label="Тэмдэглэл"
             placeholder={"Жишээ нь мөрдөх хүснэгт:\nүнэ1 = 3500\nүнэ2 = 2000\n…"}
           />
+        );
+      case "typing":
+        return typing ? (
+          <TypingTest spec={typing} value={value.typing} onChange={(t) => set({ typing: t })} readOnly={readOnly} />
+        ) : (
+          <p className="text-bad">Шивэх текст тохируулаагүй байна.</p>
         );
     }
   };

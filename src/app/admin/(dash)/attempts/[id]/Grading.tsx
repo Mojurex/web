@@ -197,7 +197,7 @@ function StudentAnswer({ q, response, sharedFrom }: { q: GradeQuestion; response
     return (
       <div className="flex flex-col gap-2">
         {sharedFrom && <p className="text-sm text-muted">{sharedFrom}-тэй ижил файлууд дээр гүйцэтгэсэн.</p>}
-        <Workspace tools={p.tools} initialFiles={p.files} images={p.images} value={response} readOnly />
+        <Workspace tools={p.tools} initialFiles={p.files} images={p.images} typing={p.typing} value={response} readOnly />
       </div>
     );
   }

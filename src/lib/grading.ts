@@ -1,4 +1,5 @@
-import type { RubricItem } from "@/content/types";
+import type { RubricItem, TypingSpec } from "@/content/types";
+import { levelScore, typingStats, type TypingResponse } from "./typing";
 
 export type QuestionType = "mcq" | "open" | "task";
 
@@ -7,11 +8,14 @@ export type Gradable = {
   points: number;
   answer_key: { answer?: string };
   rubric: RubricItem[];
+  /** Даалгаврын payload; шивэх дасгалын текстийг эндээс авна. */
+  payload?: unknown;
 };
 
 export type Response = {
   choice?: string;
   blanks?: Record<string, string>;
+  typing?: TypingResponse;
 };
 
 // Латин, кирилл ижил харагддаг үсгүүд: сурагч аль гараар бичсэн ч тэнцүү гэж үзнэ.
@@ -51,9 +55,16 @@ export function autoScore(q: Gradable, response: Response | undefined): (number 
   if (q.type === "mcq") {
     return [response?.choice && response.choice === q.answer_key.answer ? q.points : 0];
   }
-  return q.rubric.map((item) =>
-    item.blank && item.accept ? (matches(response?.blanks?.[item.blank], item.accept) ? item.points : 0) : null,
-  );
+  const spec = (q.payload as { typing?: TypingSpec | null } | undefined)?.typing;
+  const t = response?.typing;
+  const stats = spec ? typingStats(spec.text, t?.typed ?? "", t?.elapsedMs ?? 0, spec.seconds * 1000) : null;
+  return q.rubric.map((item) => {
+    if (item.typing && stats) {
+      return levelScore(item.typing.metric === "wpm" ? stats.wpm : stats.accuracy, item.typing.levels, stats.chars > 0);
+    }
+    if (item.blank && item.accept) return matches(response?.blanks?.[item.blank], item.accept) ? item.points : 0;
+    return null;
+  });
 }
 
 export type ScoreSummary = { score: number; graded: boolean };
