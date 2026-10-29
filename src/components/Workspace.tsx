@@ -10,8 +10,9 @@ import { FlowchartEditor } from "./FlowchartEditor";
 
 const CodeEditor = dynamic(() => import("./CodeEditor").then((m) => m.CodeEditor), {
   ssr: false,
-  loading: () => <div className="h-48 rounded-lg border border-line bg-surface" />,
+  loading: () => <div className="h-48 rounded-lg bg-[#1f1f1f]" />,
 });
+const EditorTab = dynamic(() => import("./CodeEditor").then((m) => m.EditorTab), { ssr: false });
 const PythonRunner = dynamic(() => import("./PythonRunner").then((m) => m.PythonRunner), { ssr: false });
 const Preview = dynamic(() => import("./Preview").then((m) => m.Preview), { ssr: false });
 const TypingTest = dynamic(() => import("./TypingTest").then((m) => m.TypingTest), { ssr: false });
@@ -57,51 +58,46 @@ function FileTabs({
     setName("");
     setError("");
   };
+  // VS Code-ийн таб мөр: CodeEditor-ийн дээд хэсэгт байрлана.
   return (
-    <div className="flex flex-wrap items-center gap-1" role="tablist" aria-label="Файлууд">
+    <>
       {sortFiles(Object.keys(files)).map((f) => (
-        <span key={f} className="flex items-center">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={active === f}
-            onClick={() => onSelect(f)}
-            className={`rounded-md px-2.5 py-1 font-mono text-[0.82rem] ${
-              active === f ? "bg-ink text-white" : "bg-surface text-ink hover:bg-tint"
-            }`}
-          >
-            {f}
-          </button>
-          {!readOnly && onRemove && !initial.includes(f) && (
-            <button type="button" className="px-1 text-muted hover:text-bad" onClick={() => onRemove(f)} aria-label={`${f} устгах`}>
-              ✕
-            </button>
-          )}
-        </span>
+        <EditorTab
+          key={f}
+          name={f}
+          active={active === f}
+          onSelect={() => onSelect(f)}
+          onClose={!readOnly && onRemove && !initial.includes(f) ? () => onRemove(f) : undefined}
+        />
       ))}
       {!readOnly && onAdd && !adding && (
-        <button type="button" className="rounded-md px-2.5 py-1 text-[0.82rem] text-indigo hover:bg-tint" onClick={() => setAdding(true)}>
+        <button
+          type="button"
+          className="px-3 font-mono text-[0.8rem] text-[#9d9d9d] hover:text-white"
+          onClick={() => setAdding(true)}
+          title="Шинэ файл"
+        >
           + Файл
         </button>
       )}
       {adding && (
-        <form onSubmit={add} className="flex items-center gap-1">
+        <form onSubmit={add} className="flex flex-wrap items-center gap-1 px-2 py-1">
           <input
             autoFocus
-            className="field w-48 py-1 font-mono text-[0.82rem]"
+            className="w-52 rounded border border-[#0078d4] bg-[#313131] px-2 py-1 font-mono text-[0.8rem] text-white outline-none"
             placeholder="components/Footer.jsx"
             value={name}
             onChange={(e) => setName(e.target.value)}
             aria-label="Шинэ файлын нэр"
           />
-          <button className="btn btn-primary py-1">Нэмэх</button>
-          <button type="button" className="btn btn-ghost py-1" onClick={() => setAdding(false)}>
+          <button className="rounded bg-[#0078d4] px-2 py-1 text-[0.8rem] text-white">Нэмэх</button>
+          <button type="button" className="px-2 py-1 text-[0.8rem] text-[#9d9d9d] hover:text-white" onClick={() => setAdding(false)}>
             Болих
           </button>
-          {error && <span className="w-full text-sm text-bad">{error}</span>}
+          {error && <span className="w-full text-[0.8rem] text-[#f48771]">{error}</span>}
         </form>
       )}
-    </div>
+    </>
   );
 }
 
@@ -126,9 +122,8 @@ function CodeWorkspace({
   const current = files[active] !== undefined ? active : names[0];
   const setFile = (v: string) => onFiles({ ...files, [current]: v });
 
-  const editor = (
-    <div className="flex min-w-0 flex-col gap-2">
-      {tool !== "python" && (
+  const tabs =
+    tool === "python" ? undefined : (
         <FileTabs
           files={files}
           active={current}
@@ -145,7 +140,9 @@ function CodeWorkspace({
             onFiles(next);
           }}
         />
-      )}
+      );
+  const editor = (
+    <div className="flex min-w-0 flex-col gap-2">
       {current !== undefined && (
         <CodeEditor
           key={current}
@@ -154,6 +151,8 @@ function CodeWorkspace({
           lang={langOfFile(current)}
           readOnly={readOnly}
           minHeight={tool === "python" ? "16rem" : "22rem"}
+          fileName={current}
+          tabs={tabs}
         />
       )}
     </div>
