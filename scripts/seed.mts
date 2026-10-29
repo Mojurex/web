@@ -37,34 +37,56 @@ if (r >= 0) {
     console.error(`Хэрэглээ: --replace анги (${grades.map((x) => x.grade).join(", ")})`);
     process.exit(1);
   }
-  const [{ n }] = await sql`
-    select count(*)::int n from answers ans
-      join questions q on q.id = ans.question_id join exams e on e.id = q.exam_id
-    where e.grade = ${grade} ${only ? sql`and q.section = ${only}` : sql``}`;
-  if (n > 0) {
-    console.error(`${grade}-р ангийн ${only ? `${only} хэсгийн ` : ""}асуултуудад ${n} хариулт холбогдсон тул солихгүй.`);
-    process.exit(1);
-  }
+  // Ижил дугаартай асуултыг байранд нь шинэчилнэ (id хэвээр тул сурагчийн хариулт холбоотой
+  // үлдэнэ). Хариулттай асуултыг устгах эсвэл шалгуурын тоог өөрчлөх бол юуг ч хийлгүй зогсоно.
   for (const variant of ["A", "B"] as Variant[]) {
-    await sql.begin(async (tx) => {
-      const row = examRow(g, variant);
-      const [exam] = await tx`
-        update exams set ${tx({ ...row, notes: tx.json(row.notes), units: tx.json(row.units) })}
-        where grade = ${grade} and variant = ${variant} returning id, access_code`;
-      if (!exam) return;
-      await tx`delete from questions where exam_id = ${exam.id} ${only ? tx`and section = ${only}` : tx``}`;
-      for (const q of questionRows(g.variants[variant]).filter((q) => !only || q.section === only)) {
-        await tx`
-          insert into questions ${tx({
+    try {
+      await sql.begin(async (tx) => {
+        const row = examRow(g, variant);
+        const [exam] = await tx`
+          update exams set ${tx({ ...row, notes: tx.json(row.notes), units: tx.json(row.units) })}
+          where grade = ${grade} and variant = ${variant} returning id, access_code`;
+        if (!exam) return;
+        const rows = questionRows(g.variants[variant]).filter((q) => !only || q.section === only);
+        const existing = await tx<{ id: string; section: string; number: string; items: number; answers: number }[]>`
+          select q.id, q.section, q.number,
+            (case when q.type = 'mcq' then 1 else jsonb_array_length(q.rubric) end)::int items,
+            (select count(*)::int from answers a where a.question_id = q.id) answers
+          from questions q where q.exam_id = ${exam.id} ${only ? tx`and q.section = ${only}` : tx``}`;
+        const items = (q: (typeof rows)[number]) => (q.type === "mcq" ? 1 : q.rubric.length);
+        const match = (e: (typeof existing)[number]) => rows.find((q) => q.section === e.section && q.number === e.number);
+        const problems = existing
+          .filter((e) => e.answers > 0)
+          .flatMap((e) => {
+            const q = match(e);
+            if (!q) return [`${e.number}: ${e.answers} хариулттай тул устгах боломжгүй`];
+            if (items(q) !== e.items) return [`${e.number}: ${e.answers} хариулттай, шалгуурын тоо ${e.items} → ${items(q)} өөрчлөгдөнө`];
+            return [];
+          });
+        if (problems.length) throw new Error(problems.join("; "));
+
+        for (const e of existing) if (!match(e)) await tx`delete from questions where id = ${e.id}`;
+        for (const q of rows) {
+          const values = {
             ...q,
-            exam_id: exam.id,
             payload: tx.json(q.payload as never),
             answer_key: tx.json(q.answer_key as never),
             rubric: tx.json(q.rubric as never),
-          })}`;
-      }
-      console.log(`↻ ${grade}-р анги ${variant}: ${only ? `${only} хэсгийг` : "асуултуудыг"} шинэчлэв (код ${exam.access_code})`);
-    });
+          };
+          const old = existing.find((e) => e.section === q.section && e.number === q.number);
+          if (old) await tx`update questions set ${tx(values)} where id = ${old.id}`;
+          else await tx`insert into questions ${tx({ ...values, exam_id: exam.id })}`;
+        }
+        const kept = existing.filter((e) => e.answers > 0).length;
+        console.log(
+          `↻ ${grade}-р анги ${variant}: ${only ? `${only} хэсгийг` : "асуултуудыг"} шинэчлэв (код ${exam.access_code}` +
+            `${kept ? `, хариулттай ${kept} асуулт хадгалагдсан` : ""})`,
+        );
+      });
+    } catch (e) {
+      console.error(`${grade}-р анги ${variant}: шинэчлээгүй — ${(e as Error).message}`);
+      process.exitCode = 1;
+    }
   }
 }
 

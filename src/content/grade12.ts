@@ -29,19 +29,23 @@ export default function App() {
 
 type PracticalData = {
   title: string;
-  prompt: string;
+  /** Даалгаврын товч тайлбар (юу бүтээх, ямар emoji ашиглах). */
+  intro: string;
+  /** public/tasks/ доторх «хөтөч дээр гарах ёстой үр дүн» зураг. */
+  image: string;
   card: string;
-  p12: string;
-  p13: string;
-  p14: string;
+  /** Карт хүлээн авах props. */
+  props: string;
+  /** Бэлэн эсэхийг заах prop ба товчны бичиг. */
   available: string;
+  action: string;
   key: string;
 };
 
 const practical = (d: PracticalData): PracticalTask[] => [
   {
     n: "П1",
-    title: d.title,
+    title: `React: ${d.title}`,
     points: 60,
     tools: ["react"],
     files: {
@@ -50,44 +54,49 @@ const practical = (d: PracticalData): PracticalTask[] => [
       [`components/${d.card}.jsx`]: "",
       "styles.css": "",
     },
-    prompt: `${d.prompt}\n\nКомпонент бүрийг \`components/\` хавтсанд тусдаа файлд бичнэ. «▶ Ажиллуулах» дарахад баруун талд үр дүн, доор нь Console харагдана.`,
+    prompt: [
+      `${d.intro} Доорх зурагт харуулсан шиг бүтээнэ (хямдралгүй, хямдралтай, дууссан – 3 тохиолдол).`,
+      `**Хөтөч дээр гарах ёстой үр дүн (жишээ)**\n\n![${d.title} — гарах ёстой үр дүн](${d.image})`,
+      "> **Анхааруулга:** `{discount && …}` хэлбэр ашиглавал `discount = 0` үед дэлгэцэнд «0» гарна. `discount > 0 && …` гэж бичнэ.",
+      "Компонент бүрийг `components/` хавтсанд тусдаа файлд бичнэ. «▶ Ажиллуулах» дарахад баруун талд үр дүн, доор нь Console харагдана.",
+    ].join("\n\n"),
     key: d.key,
     parts: [
       {
         n: "П1.1",
-        text: 'Header({ title, subtitle }) компонент үүсгэж, export default хийгээд App-д <Header title="…" subtitle="…" /> гэж ашиглана.',
+        text: "Header.jsx – title, subtitle props-ийг <h1> ба <p>-ээр харуулна. export default хийгээд App-д ашиглана.",
         points: 8,
         rubric: [
           { label: "Функц компонент, нэр том үсгээр", points: 2 },
-          { label: "Props задалж ({ title, subtitle }) ашигласан", points: 3 },
+          { label: "Props задалж ({ title, subtitle }) <h1>, <p>-д харуулсан", points: 3 },
           { label: "export default, App-д import хийсэн", points: 3 },
         ],
       },
       {
         n: "П1.2",
-        text: d.p12,
+        text: `${d.card}.jsx – ${d.props} (discount-ийн анхдагч утга 0) props хүлээн авч, icon, нэр, үнийг className бүхий картад харуулна.`,
         points: 20,
         rubric: [
           { label: "Props-ийг задалж хүлээн авсан", points: 4 },
           { label: "discount = 0 анхдагч утга", points: 4 },
-          { label: "Бүх мэдээлэл ({ } илэрхийллээр) зөв харагдана", points: 6 },
+          { label: "icon, нэр, үнэ ({ } илэрхийллээр) зөв харагдана", points: 6 },
           { label: "className ашиглан CSS загвар өгсөн", points: 6 },
         ],
       },
       {
         n: "П1.3",
-        text: d.p13,
+        text: `Нөхцөлт рендер: ${d.available} бол «${d.action}» товч; үгүй бол «Дууссан» бичигтэй идэвхгүй (disabled) товч. discount > 0 бол «-10%» хэлбэрийн тэмдэг, хуучин үнийг зурааслаж (<s>), шинэ үнийг харуулна (шинэ үнэ = price × (100 − discount) / 100). discount 0 бол зөвхөн үнэ.`,
         points: 20,
         rubric: [
-          { label: d.available, points: 6 },
+          { label: `${d.available} ? «${d.action}» : идэвхгүй «Дууссан» товч`, points: 6 },
           { label: "discount > 0 && «-X%» тэмдэг (0 үед «0» харагдахгүй)", points: 5 },
           { label: "Шинэ үнийн тооцоо зөв", points: 5 },
-          { label: "Хуучин үнэ зурааслагдсан (зөвхөн хямдралтай үед)", points: 4 },
+          { label: "Хуучин үнэ <s>-ээр зурааслагдсан (зөвхөн хямдралтай үед)", points: 4 },
         ],
       },
       {
         n: "П1.4",
-        text: d.p14,
+        text: `App.jsx – Header ба 3-аас доошгүй ${d.card}: (1) бэлэн, хямдралгүй; (2) бэлэн, хямдралтай; (3) дууссан.`,
         points: 6,
         rubric: [
           { label: "3 тохиолдол, өөр өөр props", points: 4 },
@@ -273,13 +282,13 @@ const grade12: GradeContent = {
       ],
       sectionB: practical({
         title: "«Бүтээгдэхүүний каталог»",
-        prompt: "Онлайн дэлгүүрийн бүтээгдэхүүний каталог бүтээнэ.",
+        intro: "Онлайн дэлгүүрийн бүтээгдэхүүний каталог бүтээнэ. Зургийн оронд emoji (💻 🎧 ⌚) ашиглана.",
+        image: "/tasks/12-a-techshop.png",
         card: "ProductCard",
-        p12: "ProductCard({ name, price, icon, inStock, discount = 0 }) компонент: icon (эможи), нэр, үнийг харуулж, className-ээр карт загвар (хүрээ, зай, булан) өгнө.",
-        p13: "Нөхцөлт рендер: inStock бол «Сагслах» товч, үгүй бол «Дууссан» гэсэн бичиг; discount > 0 бол «-X%» тэмдэг, хуучин үнийг зурааслаж, шинэ үнэ = price × (100 − discount) / 100-г харуулна.",
-        p14: "App-д 3 ProductCard: (1) хямдралгүй, бэлэн; (2) 20% хямдралтай, бэлэн; (3) дууссан.",
-        available: "inStock ? «Сагслах» : «Дууссан» зөв",
-        key: "Жишээ: price = 50000, discount = 20 → шинэ үнэ 40000, хуучин үнэ 50000 зураастай. discount && … гэж бичвэл discount = 0 үед «0» гарах алдааг шалгана (discount > 0 && … зөв).",
+        props: "name, price, icon, inStock, discount",
+        available: "inStock",
+        action: "Сагслах",
+        key: "Жишээ: price = 2500000, discount = 10 → шинэ үнэ 2250000, хуучин үнэ <s>2500000₮</s>. Дууссан үед <button disabled>Дууссан</button>. discount && … гэж бичвэл discount = 0 үед «0» гарах алдааг шалгана (discount > 0 && … зөв).",
       }),
     },
     B: {
@@ -446,14 +455,14 @@ const grade12: GradeContent = {
         },
       ],
       sectionB: practical({
-        title: "«Аяллын багц»",
-        prompt: "Аяллын компанийн аяллын багцын каталог бүтээнэ.",
-        card: "TourCard",
-        p12: "TourCard({ name, price, icon, seats, discount = 0 }) компонент: icon (эможи), аяллын нэр, үнэ, үлдсэн суудлын тоог харуулж, className-ээр карт загвар өгнө.",
-        p13: "Нөхцөлт рендер: seats > 0 бол «Захиалах» товч, үгүй бол «Суудал дууссан» бичиг; discount > 0 бол «-X%» тэмдэг, хуучин үнийг зурааслаж, шинэ үнэ = price × (100 − discount) / 100-г харуулна.",
-        p14: "App-д 3 TourCard: (1) хямдралгүй, суудалтай; (2) 15% хямдралтай, суудалтай; (3) суудал дууссан (seats = 0).",
-        available: "seats > 0 ? «Захиалах» : «Суудал дууссан» зөв",
-        key: "Жишээ: price = 800000, discount = 15 → шинэ үнэ 680000. seats && … гэж бичвэл seats = 0 үед «0» гарах алдааг шалгана.",
+        title: "«Хоолны цэс»",
+        intro: "Хоолны газрын өнөөдрийн цэсийг бүтээнэ. Зургийн оронд emoji (🥟 🍕 🍔) ашиглана.",
+        image: "/tasks/12-b-amttan.png",
+        card: "FoodCard",
+        props: "name, price, icon, available, discount",
+        available: "available",
+        action: "Захиалах",
+        key: "Жишээ: price = 25000, discount = 20 → шинэ үнэ 20000, хуучин үнэ <s>25000₮</s>. Дууссан үед <button disabled>Дууссан</button>. discount && … гэж бичвэл discount = 0 үед «0» гарах алдааг шалгана (discount > 0 && … зөв).",
       }),
     },
   },

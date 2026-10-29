@@ -1,6 +1,7 @@
 "use client";
 
-import { Children, cloneElement, createContext, isValidElement, useContext, type ReactNode } from "react";
+import { Children, cloneElement, createContext, isValidElement, useContext, useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { FlowDiagram, parseFlow } from "./Flow";
@@ -57,7 +58,46 @@ function withBlanks(children: ReactNode): ReactNode {
   });
 }
 
+/**
+ * Даалгаврын зураг. Багана нарийн тул дарахад хуудсан дотор томруулна (шинэ таб нээвэл
+ * таб сольсонд тооцогдоно). Esc эсвэл дахин дарахад хаагдана.
+ */
+function ZoomImage({ src, alt }: { src?: string; alt?: string }) {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", close);
+    return () => window.removeEventListener("keydown", close);
+  }, [open]);
+  if (!src) return null;
+  return (
+    <>
+      <button type="button" className="block w-full cursor-zoom-in" onClick={() => setOpen(true)} aria-label={`${alt ?? "Зураг"} — томруулах`}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={src} alt={alt ?? ""} className="w-full rounded-lg border border-line" />
+      </button>
+      <span className="mt-1 block text-sm text-muted">Томруулж харах бол зураг дээр дарна уу.</span>
+      {open &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-50 grid cursor-zoom-out place-items-center bg-ink/70 p-4"
+            role="dialog"
+            aria-modal
+            aria-label={alt}
+            onClick={() => setOpen(false)}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={src} alt={alt ?? ""} className="max-h-full max-w-[min(100%,72rem)] rounded-xl bg-white shadow-2xl" />
+          </div>,
+          document.body,
+        )}
+    </>
+  );
+}
+
 const components: Components = {
+  img: ({ src, alt }) => <ZoomImage src={typeof src === "string" ? src : undefined} alt={alt} />,
   p: ({ children }) => <p>{withBlanks(children)}</p>,
   td: ({ children }) => <td>{withBlanks(children)}</td>,
   li: ({ children }) => <li>{withBlanks(children)}</li>,
